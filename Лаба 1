@@ -1,1 +1,154 @@
+import random
+import string
 
+# 1. Множество от 1 до 10
+print("Задание 1:")
+numbers_set = set(range(1, 11))
+print(numbers_set)
+
+# 2. Кортеж и очистка списка
+print("Задание 2:")
+numbers_list = [1, 2, 3, 4, 5]
+numbers_tuple = tuple(numbers_list)
+numbers_list.clear()
+print(numbers_tuple, numbers_list)
+
+# 3. Словарь
+print("Задание 3:")
+numbers_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+numbers_set = set(range(1, 11))
+numbers_dict = dict(zip(numbers_set, numbers_list))
+print(numbers_dict)
+
+# 4. Подсчёт чётных и нечётных чисел
+print("Задание 4:")
+random_numbers = [random.randint(1, 100) for _ in range(10)]
+print("Исходный список чисел:", random_numbers)
+chet_count = 0
+nechet_count = 0
+
+for num in random_numbers:
+    if num % 2 == 0:
+        chet_count += 1
+    else:
+       nechet_count += 1
+
+print("Количество четных: ", chet_count,"Количество нечетных: " , nechet_count)
+
+# 5. Обработка словаря
+print("Задание 5:")
+def process_dict(input_dict):
+    print("\n5) Обработка словаря")
+    print("Исходный словарь:", input_dict)
+
+    # поиск минимального и максимального ключа
+    min_key = min(input_dict.keys())
+    max_key = max(input_dict.keys())
+    print("Минимальный ключ:", min_key)
+    print("Максимальный ключ:", max_key)
+
+    # вычисление среднего значения
+    average = (min_key + max_key) / 2
+    print("Среднее значение:", average)
+
+    # фильтрация словаря
+    filtered_dict = dict(
+        filter(lambda item: item[0] >= average, input_dict.items())
+    )
+
+    print("Итоговый словарь после фильтрации:", filtered_dict)
+    return filtered_dict
+
+
+test_dict = {
+    1: "один",
+    4: "четыре",
+    7: "семь",
+    10: "десять",
+    15: "пятнадцать"
+}
+
+process_dict(test_dict)
+
+# 6. Работа с прямоугольниками
+print("Задание 6:")
+def rectangle_task(lengths, widths):
+    print("\n6) Работа с прямоугольниками")
+    print("Длины:", lengths)
+    print("Ширины:", widths)
+
+    # вычисляем площади
+    areas = []
+    for l, w in zip(lengths, widths):
+        area = l * w
+        areas.append(area)
+        print(f"Площадь прямоугольника {l} x {w} = {area}")
+
+    # записываем площади в множество
+    areas_set = set(areas)
+    print("Множество площадей:", areas_set)
+
+    # сортировка
+    sorted_areas = sorted(areas_set)
+    print("Отсортированные площади:", sorted_areas)
+
+    # поиск медианы
+    mid = len(sorted_areas) // 2
+    if len(sorted_areas) % 2 == 0:
+        median = (sorted_areas[mid - 1] + sorted_areas[mid]) / 2
+    else:
+        median = sorted_areas[mid]
+
+    print("Медиана:", median)
+
+    # фильтрация
+    filtered_areas = list(filter(lambda x: x >= median, sorted_areas))
+    print("Площади >= медианы:", filtered_areas)
+
+    # итоговый расчёт
+    result = sum(filtered_areas) / len(lengths)
+    print("Итоговый результат:", result)
+
+    return result
+
+
+lengths = [5, 9, 6, 8]
+widths = [2, 3, 5, 7]
+
+rectangle_task(lengths, widths)
+# 7. Генерация пароля
+print("")
+print("Задание 7:")
+def generate_password(length, upper_count, special_count):
+    print("\n7) Генерация пароля")
+    print("Длина пароля:", length)
+    print("Количество заглавных букв:", upper_count)
+    print("Количество специальных символов:", special_count)
+
+    password = []
+
+    # заглавные буквы
+    upper_letters = random.choices(string.ascii_uppercase, k=upper_count)
+    print("Заглавные буквы:", upper_letters)
+    password += upper_letters
+
+    # специальные символы
+    special_symbols = random.choices(string.punctuation, k=special_count)
+    print("Специальные символы:", special_symbols)
+    password += special_symbols
+
+    # остальные символы
+    remaining = length - upper_count - special_count
+    other_symbols = random.choices(string.ascii_lowercase + string.digits, k=remaining)
+    print("Остальные символы:", other_symbols)
+    password += other_symbols
+
+    # перемешивание
+    random.shuffle(password)
+    final_password = ''.join(password)
+
+    print("Сгенерированный пароль:", final_password)
+    return final_password
+
+
+generate_password(10, 3, 2)
