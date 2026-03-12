@@ -1,0 +1,252 @@
+import json
+import random
+import logging
+import time
+
+# ---------------- LOGGER ----------------
+
+logger = logging.getLogger("RZA_Model")
+logger.setLevel(logging.DEBUG)
+
+file_handler = logging.FileHandler("rza.log")
+console_handler = logging.StreamHandler()
+
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+
+# ---------------- BREAKER ----------------
+
+class Breaker:
+
+    def __init__(self, name):
+        self.name = name
+        self.state = "ON"
+
+    def trip(self):
+        if self.state == "ON":
+            self.state = "OFF"
+            logger.info(f"Выключатель {self.name} отключен")
+
+
+# ---------------- PROTECTION ----------------
+
+class Protection:
+
+    def __init__(self, name, current_setting, delay, fail_probability):
+        self.name = name
+        self.current_setting = current_setting
+        self.delay = delay
+        self.fail_probability = fail_probability
+
+    def check(self, current):
+
+        failure = random.randint(0,100)
+
+        if failure <= self.fail_probability:
+            logger.warning(f"Отказ защиты {self.name}")
+            return False
+
+        if current >= self.current_setting:
+
+            logger.info(
+                f"Сработала защита {self.name}, ток {current} А"
+            )
+
+            time.sleep(self.delay/1000)
+
+            return True
+
+        return False
+
+
+# ---------------- POWER OBJECT ----------------
+
+class PowerObject:
+
+    def __init__(self, name):
+
+        self.name = name
+        self.protections = []
+        self.breakers = []
+
+    def add_protection(self, protection):
+        self.protections.append(protection)
+
+    def add_breaker(self, breaker):
+        self.breakers.append(breaker)
+
+    def fault(self, current):
+
+        logger.info(f"КЗ на объекте {self.name}, ток {current} А")
+
+        for protection in self.protections:
+
+            if protection.check(current):
+
+                for br in self.breakers:
+                    br.trip()
+
+                return
+
+        logger.warning("Защита не сработала")
+
+
+# ---------------- FAULT ----------------
+
+class Fault:
+
+    def __init__(self):
+
+        self.type = random.choice(
+            ["3ф КЗ","2ф КЗ","1ф КЗ","витковое"]
+        )
+
+        base = random.randint(600,1200)
+
+        if self.type == "3ф КЗ":
+            self.current = base
+
+        elif self.type == "2ф КЗ":
+            self.current = base*0.8
+
+        elif self.type == "1ф КЗ":
+            self.current = base*0.6
+
+        else:
+            self.current = base*0.5
+
+
+# ---------------- SUBSTATION ----------------
+
+class Substation:
+
+    def __init__(self):
+        self.objects = []
+
+    def add_object(self,obj):
+        self.objects.append(obj)
+
+    def simulate_fault(self):
+
+        obj = random.choice(self.objects)
+
+        fault = Fault()
+
+        logger.info(f"Тип повреждения: {fault.type}")
+
+        obj.fault(fault.current)
+
+
+# ---------------- LOAD CONFIG ----------------
+
+with open("config.json") as f:
+    config = json.load(f)
+
+
+# ---------------- CREATE OBJECTS ----------------
+
+ps = Substation()
+
+
+# --- линии 220 кВ ---
+
+for i in range(1,3):
+
+    line = PowerObject(f"ВЛ 220 кВ №{i}")
+    line.add_breaker(Breaker(f"Q220_{i}"))
+
+    p = config["protections"]["DZL"]
+    line.add_protection(
+        Protection("ДЗЛ",p["current_setting"],p["delay"],p["fail_probability"])
+    )
+
+    p = config["protections"]["MTZ"]
+    line.add_protection(
+        Protection("МТЗ",p["current_setting"],p["delay"],p["fail_probability"])
+    )
+
+    ps.add_object(line)
+
+
+# --- линии 110 кВ ---
+
+for i in range(1,4):
+
+    line = PowerObject(f"ВЛ 110 кВ №{i}")
+    line.add_breaker(Breaker(f"Q110_{i}"))
+
+    p = config["protections"]["DZ"]
+    line.add_protection(
+        Protection("ДЗ",p["current_setting"],p["delay"],p["fail_probability"])
+    )
+
+    p = config["protections"]["MTZ"]
+    line.add_protection(
+        Protection("МТЗ",p["current_setting"],p["delay"],p["fail_probability"])
+    )
+
+    ps.add_object(line)
+
+
+# --- трансформатор ---
+
+transformer = PowerObject("Трансформатор 220/110/10")
+transformer.add_breaker(Breaker("QT"))
+
+p = config["protections"]["DZT"]
+transformer.add_protection(
+    Protection("ДЗТ",p["current_setting"],p["delay"],p["fail_probability"])
+)
+
+ps.add_object(transformer)
+
+
+# --- шины ---
+
+bus = PowerObject("Шины 110 кВ")
+bus.add_breaker(Breaker("QB"))
+
+p = config["protections"]["DZSH"]
+bus.add_protection(
+    Protection("ДЗШ",p["current_setting"],p["delay"],p["fail_probability"])
+)
+
+ps.add_object(bus)
+
+
+# --- фидеры 10 кВ ---
+
+for i in range(1,3):
+
+    feeder = PowerObject(f"Фидер 10 кВ №{i}")
+    feeder.add_breaker(Breaker(f"QF_{i}"))
+
+    p = config["protections"]["TO"]
+    feeder.add_protection(
+        Protection("ТО",p["current_setting"],p["delay"],p["fail_probability"])
+    )
+
+    ps.add_object(feeder)
+
+
+# ---------------- SIMULATION ----------------
+
+iteration = 0
+
+while iteration < 15:
+
+    logger.info(f"------ Итерация {iteration+1} ------")
+
+    ps.simulate_fault()
+
+    iteration += 1
+
+    time.sleep(1)
+
+logger.info("Моделирование завершено")
