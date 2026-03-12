@@ -1,0 +1,34 @@
+{
+  "protections": {
+    "DZL": {
+      "current_setting": 800,
+      "delay": 0,
+      "fail_probability": 5
+    },
+    "DZ": {
+      "current_setting": 700,
+      "delay": 0,
+      "fail_probability": 5
+    },
+    "MTZ": {
+      "current_setting": 500,
+      "delay": 500,
+      "fail_probability": 10
+    },
+    "TO": {
+      "current_setting": 900,
+      "delay": 0,
+      "fail_probability": 5
+    },
+    "DZT": {
+      "current_setting": 600,
+      "delay": 0,
+      "fail_probability": 5
+    },
+    "DZSH": {
+      "current_setting": 750,
+      "delay": 0,
+      "fail_probability": 5
+    }
+  }
+}
