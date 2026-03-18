@@ -3,7 +3,7 @@ import random
 import logging
 import time
 
-# ---------------- LOGGER ----------------
+# ---------------- Лог ----------------
 
 logger = logging.getLogger("RZA_Model")
 logger.setLevel(logging.DEBUG)
@@ -20,7 +20,7 @@ logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
 
-# ---------------- BREAKER ----------------
+# ---------------- Выключатель ----------------
 
 class Breaker:
 
@@ -34,7 +34,7 @@ class Breaker:
             logger.info(f"Выключатель {self.name} отключен")
 
 
-# ---------------- PROTECTION ----------------
+# ---------------- Защита ----------------
 
 class Protection:
 
@@ -74,8 +74,8 @@ class PowerObject:
         self.protections = []
         self.breakers = []
 
-    def add_protection(self, protection):
-        self.protections.append(protection)
+    def add_protection(self, protections):
+        self.protections.append(protections)
 
     def add_breaker(self, breaker):
         self.breakers.append(breaker)
@@ -105,7 +105,7 @@ class PowerObject:
         return 
 
 
-# ---------------- FAULT ----------------
+# ---------------- Повреждение ----------------
 
 class Fault:
 
@@ -149,16 +149,10 @@ class Substation:
         obj.fault(fault.current)
 
 
-# ---------------- LOAD CONFIG ----------------
-
 with open("config.json") as f:
     config = json.load(f)
 
-
-# ---------------- CREATE OBJECTS ----------------
-
 ps = Substation()
-
 
 # --- линии 220 кВ ---
 
@@ -200,7 +194,19 @@ for i in range(1,4):
     ps.add_object(line)
 
 
-# --- трансформатор ---
+# --- трансформатор 1 ---
+
+transformer = PowerObject("Трансформатор 220/110/10")
+transformer.add_breaker(Breaker("QT"))
+
+p = config["protections"]["DZT"]
+transformer.add_protection(
+    Protection("ДЗТ",p["current_setting"],p["delay"],p["fail_probability"])
+)
+
+ps.add_object(transformer)
+
+# --- трансформатор 2 ---
 
 transformer = PowerObject("Трансформатор 220/110/10")
 transformer.add_breaker(Breaker("QT"))
@@ -213,7 +219,7 @@ transformer.add_protection(
 ps.add_object(transformer)
 
 
-# --- шины ---
+# --- шины 110 кВ---
 
 bus = PowerObject("Шины 110 кВ")
 bus.add_breaker(Breaker("QB"))
@@ -225,6 +231,29 @@ bus.add_protection(
 
 ps.add_object(bus)
 
+# --- шины 220 кВ---
+
+bus = PowerObject("Шины 220 кВ")
+bus.add_breaker(Breaker("QA"))
+
+p = config["protections"]["DZSH"]
+bus.add_protection(
+    Protection("ДЗШ",p["current_setting"],p["delay"],p["fail_probability"])
+)
+
+ps.add_object(bus)
+
+# --- шины 10 кВ---
+
+bus = PowerObject("Шины 10 кВ")
+bus.add_breaker(Breaker("QZ"))
+
+p = config["protections"]["LZSH"]
+bus.add_protection(
+    Protection("ЛЗШ",p["current_setting"],p["delay"],p["fail_probability"])
+)
+
+ps.add_object(bus)
 
 # --- фидеры 10 кВ ---
 
@@ -241,7 +270,7 @@ for i in range(1,3):
     ps.add_object(feeder)
 
 
-# ---------------- SIMULATION ----------------
+# ---------------- Cимуляция ----------------
 
 
 iteration = 0
